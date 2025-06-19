@@ -1,1 +1,112 @@
+import numpy as np
+from scipy.linalg import lu
+import matplotlib.pyplot as plt
+
+def input_matrix_vector():
+    n = int(input("Enter the dimension of the matrix (2 or 3): "))
+    if n not in [2, 3]:
+        raise ValueError("Only 2x2 or 3x3 matrices are supported.")
+
+    print(f"Enter the {n}x{n} matrix row by row (space separated):")
+    A = np.array([list(map(float, input(f"Row {i+1}: ").split())) for i in range(n)])
+
+    print(f"Enter the {n}-element vector (space separated):")
+    b = np.array(list(map(float, input("Vector b: ").split())))
+
+    return A, b
+
+def gaussian_elimination(A, b):
+    Ab = np.hstack([A.astype(float), b.reshape(-1, 1)])
+    n = len(b)
+
+    for i in range(n):
+        # Pivot
+        max_row = np.argmax(abs(Ab[i:, i])) + i
+        Ab[[i, max_row]] = Ab[[max_row, i]]
+
+        for j in range(i + 1, n):
+            factor = Ab[j][i] / Ab[i][i]
+            Ab[j] = Ab[j] - factor * Ab[i]
+
+    # Back substitution
+    x = np.zeros(n)
+    for i in range(n - 1, -1, -1):
+        x[i] = (Ab[i, -1] - np.dot(Ab[i, i + 1:n], x[i + 1:n])) / Ab[i, i]
+
+    return x
+
+def solve_inverse_method(A, b):
+    A_inv = np.linalg.inv(A)
+    return A_inv @ b
+
+def do_lu_decomposition(A):
+    P, L, U = lu(A)
+    return P, L, U
+
+def visualize_2x2(A, b, solution):
+    x_vals = np.linspace(-10, 10, 400)
+    y1 = (b[0] - A[0, 0]*x_vals) / A[0, 1]
+    y2 = (b[1] - A[1, 0]*x_vals) / A[1, 1]
+
+    plt.figure(figsize=(8, 6))
+    plt.plot(x_vals, y1, label='Equation 1', color='blue')
+    plt.plot(x_vals, y2, label='Equation 2', color='green')
+    plt.plot(solution[0], solution[1], 'ro', label='Solution')
+    plt.axhline(0, color='black', linewidth=0.5)
+    plt.axvline(0, color='black', linewidth=0.5)
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title('2x2 System Visualization')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+def main():
+    A, b = input_matrix_vector()
+
+    print("\nMatrix A:")
+    print(A)
+
+    print("\nVector b:")
+    print(b)
+
+    # Transpose
+    print("\nTranspose of A:")
+    print(A.T)
+
+    # Gaussian elimination
+    try:
+        x_gauss = gaussian_elimination(A.copy(), b.copy())
+        print("\nSolution using Gaussian Elimination:")
+        print(x_gauss)
+    except Exception as e:
+        print("Gaussian Elimination failed:", e)
+
+    # Inverse matrix method
+    try:
+        x_inv = solve_inverse_method(A, b)
+        print("\nSolution using Inverse Matrix Method:")
+        print(x_inv)
+    except np.linalg.LinAlgError:
+        print("Matrix is singular; inverse method not applicable.")
+
+    # LU Decomposition
+    try:
+        P, L, U = do_lu_decomposition(A)
+        print("\nLU Decomposition:")
+        print("P matrix:\n", P)
+        print("L matrix:\n", L)
+        print("U matrix:\n", U)
+    except Exception as e:
+        print("LU Decomposition failed:", e)
+
+    # Visualization
+    if A.shape == (2, 2):
+        try:
+            visualize_2x2(A, b, x_gauss)
+        except:
+            print("Visualization skipped due to numerical issue.")
+
+if __name__ == "__main__":
+    main()
 
